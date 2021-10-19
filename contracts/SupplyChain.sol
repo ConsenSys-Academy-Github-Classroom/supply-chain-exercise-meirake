@@ -26,7 +26,7 @@ contract SupplyChain {
 
   event LogForSale(uint sku);
 
-  // <LogSold event: sku arg>
+  event LogSold(uint sku);
 
   // <LogShipped event: sku arg>
 
@@ -47,7 +47,7 @@ contract SupplyChain {
   }
 
   modifier paidEnough(uint _price) { 
-    // require(msg.value >= _price); 
+    require(msg.value >= _price); 
     _;
   }
 
@@ -59,15 +59,11 @@ contract SupplyChain {
     // items[_sku].buyer.transfer(amountToRefund);
   }
 
-  // For each of the following modifiers, use what you learned about modifiers
-  // to give them functionality. For example, the forSale modifier should
-  // require that the item with the given sku has the state ForSale. Note that
-  // the uninitialized Item.State is 0, which is also the index of the ForSale
-  // value, so checking that Item.State == ForSale is not sufficient to check
-  // that an Item is for sale. Hint: What item properties will be non-zero when
-  // an Item has been added?
-
-  // modifier forSale
+  modifier forSale(uint _sku) {
+    require(items[_sku].seller != address(0));
+    require(items[_sku].state == State.ForSale);
+    _;
+  }
   // modifier sold(uint _sku) 
   // modifier shipped(uint _sku) 
   // modifier received(uint _sku) 
@@ -93,18 +89,18 @@ contract SupplyChain {
     return true;
   }
 
-  // Implement this buyItem function. 
-  // 1. it should be payable in order to receive refunds
-  // 2. this should transfer money to the seller, 
-  // 3. set the buyer as the person who called this transaction, 
-  // 4. set the state to Sold. 
   // 5. this function should use 3 modifiers to check 
-  //    - if the item is for sale, 
-  //    - if the buyer paid enough, 
   //    - check the value after the function is called to make 
   //      sure the buyer is refunded any excess ether sent. 
-  // 6. call the event associated with this function!
-  function buyItem(uint sku) public {}
+  function buyItem(uint sku) public payable 
+  forSale(sku)
+  paidEnough(items[sku].price)
+  {
+    items[sku].buyer = msg.sender;
+    items[sku].seller.transfer(items[sku].price);
+    items[sku].state = State.Sold;
+    emit LogSold(sku);
+  }
 
   // 1. Add modifiers to check:
   //    - the item is sold already 
